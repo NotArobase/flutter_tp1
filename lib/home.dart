@@ -2,18 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter_tp1/serie.dart';
 import 'film.dart';
 import 'media.dart';
+import 'serie.dart';
 import 'bd.dart';
 import 'livre.dart';
 import 'data.dart';
 
-class ListFavorite extends StatefulWidget {
-  const ListFavorite({super.key});
+class ListTileSelectExample extends StatefulWidget {
+  const ListTileSelectExample({super.key});
 
   @override
-  ListFavoriteState createState() => ListFavoriteState();
+  ListTileSelectExampleState createState() => ListTileSelectExampleState();
 }
 
-class ListFavoriteState extends State<ListFavorite> with SingleTickerProviderStateMixin {
+class ListTileSelectExampleState extends State<ListTileSelectExample> with SingleTickerProviderStateMixin {
   late List<bool> _selected;
   late List<Film> _films;
   late List<Serie> _series;
@@ -21,7 +22,7 @@ class ListFavoriteState extends State<ListFavorite> with SingleTickerProviderSta
   late List<Livre> _livres;
   late bool _isGridMode = true;
   bool isSelectionMode = false;
-  final int listLength = favorites.length;
+  final int listLength = media.length;
   bool _selectAll = false;
   int _selectedTabIndex = 0;
   late TabController _tabController;
@@ -29,10 +30,10 @@ class ListFavoriteState extends State<ListFavorite> with SingleTickerProviderSta
   @override
   void initState() {
     super.initState();
-    _films = favorites.whereType<Film>().toList();
-    _series = favorites.whereType<Serie>().toList();
-    _bds = favorites.whereType<BD>().toList();
-    _livres = favorites.whereType<Livre>().toList();
+    _films = media.whereType<Film>().toList();
+    _series = media.whereType<Serie>().toList();
+    _bds = media.whereType<BD>().toList();
+    _livres = media.whereType<Livre>().toList();
     initializeSelection();
     _tabController = TabController(length: 4, vsync: this);
     _tabController.addListener(_handleTabSelection);
@@ -40,6 +41,13 @@ class ListFavoriteState extends State<ListFavorite> with SingleTickerProviderSta
 
   void initializeSelection() {
     _selected = List<bool>.generate(listLength, (_) => false);
+    
+  }
+  @override
+  void dispose() {
+    // Dispose TabController to avoid memory leaks
+    _tabController.dispose();
+    super.dispose();
   }
 
   void updateSelectionMode(bool value) {
@@ -47,13 +55,14 @@ class ListFavoriteState extends State<ListFavorite> with SingleTickerProviderSta
       isSelectionMode = value;
     });
   }
+
   void _handleTabSelection() {
     setState(() {
       _selectedTabIndex = _tabController.index;
     });
   }
 
-  List<Media> _getTabData(int tabIndex) {
+List<Media> _getTabData(int tabIndex) {
   switch (tabIndex) {
     case 0:
       return _films;
@@ -123,13 +132,12 @@ class ListFavoriteState extends State<ListFavorite> with SingleTickerProviderSta
                   }),
             if (isSelectionMode)
               IconButton(
-                icon: const Icon(Icons.heart_broken_outlined),
+                icon: const Icon(Icons.favorite),
                 onPressed: () {
                   final tabData = _getTabData(_selectedTabIndex);
-                  // Retirer les éléments sélectionnés à la liste de favoris
                   for (int i = 0; i < _selected.length; i++) {
-                    if (_selected[i] && favorites.contains(tabData[i])) {
-                      favorites.remove(tabData[i]);
+                    if (_selected[i] && !favorites.contains(tabData[i])) {
+                      favorites.add(tabData[i]);
                     }
                   }
                   // Sortir du mode de sélection
@@ -146,7 +154,7 @@ class ListFavoriteState extends State<ListFavorite> with SingleTickerProviderSta
         length: 4,
         child: Column(
           children: <Widget>[
-             TabBar(
+            TabBar(
               controller: _tabController,
               tabs: const [
                 Tab(text: 'Films'),
@@ -172,7 +180,7 @@ class ListFavoriteState extends State<ListFavorite> with SingleTickerProviderSta
     );
   }
 
-  Widget _buildContent(List<Media> favorites) {
+  Widget _buildContent(List<Media> media) {
     return _isGridMode
         ? GridBuilder(
           isSelectionMode: isSelectionMode,
@@ -180,7 +188,7 @@ class ListFavoriteState extends State<ListFavorite> with SingleTickerProviderSta
             onSelectionChange: (bool x) {
               setState(() {isSelectionMode = x;});
             },
-            media : favorites
+            media : media,
           )
         : ListBuilder(
           isSelectionMode: isSelectionMode,
@@ -188,7 +196,7 @@ class ListFavoriteState extends State<ListFavorite> with SingleTickerProviderSta
             onSelectionChange: (bool x) {
               setState(() {isSelectionMode = x;});
             },
-            media : favorites
+            media : media,
           );
   }
 }
@@ -199,13 +207,13 @@ class GridBuilder extends StatefulWidget {
     required this.selectedList,
     required this.isSelectionMode,
     required this.onSelectionChange,
-    required this.media, // Add media parameter
+    required this.media,
   });
 
   final bool isSelectionMode;
   final ValueChanged<bool>? onSelectionChange;
   final List<bool> selectedList;
-  final List<Media> media; // Define media parameter
+  final List<Media> media;
 
   @override
   GridBuilderState createState() => GridBuilderState();
@@ -293,7 +301,7 @@ class _ListBuilderState extends State<ListBuilder> {
   @override
   Widget build(BuildContext context) {
     return ListView.builder(
-        itemCount: widget.selectedList.length,
+        itemCount: widget.media.length,
         itemBuilder: (_, int index) {
           return ListTile(
               onTap: () => _toggle(index),
